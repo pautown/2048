@@ -895,9 +895,9 @@ ApplicationMain.create = function(config) {
 	ManifestResources.init(config);
 	var _this = app.meta;
 	if(__map_reserved["build"] != null) {
-		_this.setReserved("build","210");
+		_this.setReserved("build","1");
 	} else {
-		_this.h["build"] = "210";
+		_this.h["build"] = "1";
 	}
 	var _this1 = app.meta;
 	if(__map_reserved["company"] != null) {
@@ -5577,6 +5577,8 @@ flixel_FlxState.prototype = $extend(flixel_group_FlxTypedGroup.prototype,{
 	,__properties__: $extend(flixel_group_FlxTypedGroup.prototype.__properties__,{set_bgColor:"set_bgColor",get_bgColor:"get_bgColor"})
 });
 var PlayState = function(MaxSize) {
+	this.score_text = new flixel_text_FlxText(0,0,0,"Score: 0",14);
+	this.FlxColorArray = flixel_util__$FlxColor_FlxColor_$Impl_$.gradient(-16776961,-16744448,800);
 	this.drawStyle = { smoothing : false};
 	this.lineStyle = { color : -1, thickness : 3};
 	this.canvas = new flixel_FlxSprite();
@@ -5600,12 +5602,18 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 	,canvas: null
 	,lineStyle: null
 	,drawStyle: null
+	,FlxColorArray: null
+	,score_text: null
+	,score: null
 	,create: function() {
 		flixel_FlxState.prototype.create.call(this);
 		this.canvas.makeGraphic(flixel_FlxG.width,flixel_FlxG.height,0,true);
 		this.add(this.canvas);
 		this.reset_board();
 		this.create_score_txts();
+		this.add(this.score_text);
+		this.score_text.set_x(10);
+		this.score_text.set_y(this.grid_magnitude * this.tile_magnitude + 10);
 	}
 	,update: function(elapsed) {
 		flixel_FlxState.prototype.update.call(this,elapsed);
@@ -5659,11 +5667,16 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 			}
 			this.tiles_moved = false;
 			this.update_board();
+			this.update_score_display();
 			this.update_visual_grid(this.grid_magnitude,this.grid_magnitude);
 			this.reset_board_array();
 		}
 	}
+	,update_score_display: function() {
+		this.score_text.set_text("Score: " + Std.string(this.score));
+	}
 	,reset_board: function() {
+		this.score = 0;
 		this.tile_array = this.new_blank_grid();
 		this.add_random_non_zero_tile();
 	}
@@ -5696,7 +5709,11 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 		if(score == 0) {
 			flixel_util_FlxSpriteUtil.drawRoundRect(this.canvas,X,Y,this.tile_magnitude,this.tile_magnitude,20,20,-16777216,this.lineStyle,this.drawStyle);
 		} else {
-			flixel_util_FlxSpriteUtil.drawRoundRect(this.canvas,X,Y,this.tile_magnitude,this.tile_magnitude,20,20,-16776961,this.lineStyle,this.drawStyle);
+			var color_array_index = Math.round(Math.log(score) * 100);
+			if(color_array_index > this.FlxColorArray.length - 1) {
+				color_array_index = this.FlxColorArray.length - 1;
+			}
+			flixel_util_FlxSpriteUtil.drawRoundRect(this.canvas,X,Y,this.tile_magnitude,this.tile_magnitude,20,20,this.FlxColorArray[color_array_index],this.lineStyle,this.drawStyle);
 		}
 	}
 	,update_visual_grid: function(grid_columns,grid_rows) {
@@ -5848,6 +5865,7 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 					this.tiles_moved = true;
 					row_array[i - tiles_to_shift - 1][1] = true;
 					row_array[i - tiles_to_shift - 1][0] = row_array[i - tiles_to_shift][0] + row_array[i - tiles_to_shift - 1][0];
+					this.score += row_array[i - tiles_to_shift - 1][0] | 0;
 					row_array[i - tiles_to_shift][0] = 0;
 				}
 			}
@@ -67968,7 +67986,7 @@ var lime_utils_AssetCache = function() {
 	this.audio = new haxe_ds_StringMap();
 	this.font = new haxe_ds_StringMap();
 	this.image = new haxe_ds_StringMap();
-	this.version = 881493;
+	this.version = 229498;
 };
 $hxClasses["lime.utils.AssetCache"] = lime_utils_AssetCache;
 lime_utils_AssetCache.__name__ = ["lime","utils","AssetCache"];

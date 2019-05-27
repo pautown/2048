@@ -5577,7 +5577,9 @@ flixel_FlxState.prototype = $extend(flixel_group_FlxTypedGroup.prototype,{
 	,__properties__: $extend(flixel_group_FlxTypedGroup.prototype.__properties__,{set_bgColor:"set_bgColor",get_bgColor:"get_bgColor"})
 });
 var PlayState = function(MaxSize) {
-	this.score_text = new flixel_text_FlxText(0,0,0,"Score: 0",14);
+	this.instructions_text = new flixel_text_FlxText(0,0,0,"Swipe/Arrow Keys to combine tiles to reach 2048!",8);
+	this.score_text = new flixel_text_FlxText(0,0,0,"Score: 0",16);
+	this.title_text = new flixel_text_FlxText(0,0,0,"2048.paul.town",20);
 	this.FlxColorArray = flixel_util__$FlxColor_FlxColor_$Impl_$.gradient(-16776961,-16744448,800);
 	this.drawStyle = { smoothing : false};
 	this.lineStyle = { color : -1, thickness : 3};
@@ -5587,13 +5589,17 @@ var PlayState = function(MaxSize) {
 	this.tiles_moved = false;
 	this.four_random_tile_chance = 0.2;
 	this.grid_magnitude = 4;
+	this.y_offset = 60;
+	this.x_offset = 10;
 	flixel_FlxState.call(this,MaxSize);
 };
 $hxClasses["PlayState"] = PlayState;
 PlayState.__name__ = ["PlayState"];
 PlayState.__super__ = flixel_FlxState;
 PlayState.prototype = $extend(flixel_FlxState.prototype,{
-	tile_array: null
+	x_offset: null
+	,y_offset: null
+	,tile_array: null
 	,grid_magnitude: null
 	,four_random_tile_chance: null
 	,tiles_moved: null
@@ -5603,7 +5609,10 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 	,lineStyle: null
 	,drawStyle: null
 	,FlxColorArray: null
+	,title_text: null
 	,score_text: null
+	,instructions_text: null
+	,bottom_of_grid_y: null
 	,score: null
 	,create: function() {
 		flixel_FlxState.prototype.create.call(this);
@@ -5612,47 +5621,93 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 		this.reset_board();
 		this.create_score_txts();
 		this.add(this.score_text);
-		this.score_text.set_x(10);
-		this.score_text.set_y(this.grid_magnitude * this.tile_magnitude + 10);
+		this.score_text.set_x(this.grid_magnitude * this.tile_magnitude / 2 - this.score_text.get_width() / 2);
+		this.score_text.set_y(this.y_offset - this.score_text.get_height());
+		this.bottom_of_grid_y = this.grid_magnitude * this.tile_magnitude + this.y_offset;
+		this.add(this.instructions_text);
+		this.instructions_text.set_y(this.bottom_of_grid_y + 10);
+		this.instructions_text.set_x(this.grid_magnitude * this.tile_magnitude / 2 - this.instructions_text.get_width() / 2);
+		this.add(this.title_text);
+		this.title_text.set_y(10);
+		this.title_text.set_x(this.grid_magnitude * this.tile_magnitude / 2 - this.title_text.get_width() / 2);
 	}
 	,update: function(elapsed) {
 		flixel_FlxState.prototype.update.call(this,elapsed);
+		var swipe_up = false;
+		var swipe_down = false;
+		var swipe_right = false;
+		var swipe_left = false;
+		var swiped = false;
 		var _g = 0;
-		var _g1 = this.tile_array;
+		var _g1 = flixel_FlxG.swipes;
 		while(_g < _g1.length) {
-			var row_array = _g1[_g];
+			var swipe = _g1[_g];
 			++_g;
+			var tmp = swipe.startPosition.angleBetween(swipe.endPosition) > 45 && swipe.startPosition.angleBetween(swipe.endPosition) < 135;
+			var tmp1 = swipe.startPosition.angleBetween(swipe.endPosition) > 225 && swipe.startPosition.angleBetween(swipe.endPosition) < 315;
+			var tmp2 = swipe.startPosition.angleBetween(swipe.endPosition) > 45 && swipe.startPosition.angleBetween(swipe.endPosition) < 315;
+			var tmp3 = swipe.startPosition.angleBetween(swipe.endPosition) > 135 && swipe.startPosition.angleBetween(swipe.endPosition) < 225;
+		}
+		var _g2 = 0;
+		var _g11 = this.tile_array;
+		while(_g2 < _g11.length) {
+			var row_array = _g11[_g2];
+			++_g2;
+			var tmp4;
 			var _this = flixel_FlxG.keys.justPressed;
-			if(_this.keyManager.checkStatus(37,_this.status)) {
+			if(!_this.keyManager.checkStatus(37,_this.status)) {
+				tmp4 = swipe_left;
+			} else {
+				tmp4 = true;
+			}
+			if(tmp4) {
 				this.shift_array_left(row_array);
 			}
+			var tmp5;
 			var _this1 = flixel_FlxG.keys.justPressed;
-			if(_this1.keyManager.checkStatus(39,_this1.status)) {
+			if(!_this1.keyManager.checkStatus(39,_this1.status)) {
+				tmp5 = swipe_right;
+			} else {
+				tmp5 = true;
+			}
+			if(tmp5) {
 				row_array.reverse();
 				this.shift_array_left(row_array);
 				row_array.reverse();
 			}
 		}
+		var tmp6;
 		var _this2 = flixel_FlxG.keys.justPressed;
-		if(_this2.keyManager.checkStatus(38,_this2.status)) {
+		if(!_this2.keyManager.checkStatus(38,_this2.status)) {
+			tmp6 = swipe_up;
+		} else {
+			tmp6 = true;
+		}
+		if(tmp6) {
 			this.rotate_board_counterclockwise();
-			var _g2 = 0;
-			var _g11 = this.tile_array;
-			while(_g2 < _g11.length) {
-				var row_array1 = _g11[_g2];
-				++_g2;
+			var _g3 = 0;
+			var _g12 = this.tile_array;
+			while(_g3 < _g12.length) {
+				var row_array1 = _g12[_g3];
+				++_g3;
 				this.shift_array_left(row_array1);
 			}
 			this.rotate_board_clockwise();
 		}
+		var tmp7;
 		var _this3 = flixel_FlxG.keys.justPressed;
-		if(_this3.keyManager.checkStatus(40,_this3.status)) {
+		if(!_this3.keyManager.checkStatus(40,_this3.status)) {
+			tmp7 = swipe_down;
+		} else {
+			tmp7 = true;
+		}
+		if(tmp7) {
 			this.rotate_board_clockwise();
-			var _g3 = 0;
-			var _g12 = this.tile_array;
-			while(_g3 < _g12.length) {
-				var row_array2 = _g12[_g3];
-				++_g3;
+			var _g4 = 0;
+			var _g13 = this.tile_array;
+			while(_g4 < _g13.length) {
+				var row_array2 = _g13[_g4];
+				++_g4;
 				this.shift_array_left(row_array2);
 			}
 			this.rotate_board_counterclockwise();
@@ -5661,7 +5716,7 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 		if(_this4.keyManager.checkStatus(82,_this4.status)) {
 			this.reset_board();
 		}
-		if(flixel_FlxG.keys.justPressed.get_ANY()) {
+		if(flixel_FlxG.keys.justPressed.get_ANY() || swiped) {
 			if(this.tiles_moved) {
 				this.add_random_non_zero_tile();
 			}
@@ -5692,7 +5747,7 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 			while(_g2 < row.length) {
 				var tile = row[_g2];
 				++_g2;
-				var text = new flixel_text_FlxText(i2 * this.tile_magnitude,i * this.tile_magnitude,0,"X",15);
+				var text = new flixel_text_FlxText(i2 * this.tile_magnitude + this.x_offset,i * this.tile_magnitude + this.y_offset,0,"X",15);
 				this.add(text);
 				var _g3 = text;
 				_g3.set_x(_g3.x + text.get_width() / 4);
@@ -5706,6 +5761,8 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 		}
 	}
 	,draw_tile: function(X,Y,score) {
+		X += this.x_offset;
+		Y += this.y_offset;
 		if(score == 0) {
 			flixel_util_FlxSpriteUtil.drawRoundRect(this.canvas,X,Y,this.tile_magnitude,this.tile_magnitude,20,20,-16777216,this.lineStyle,this.drawStyle);
 		} else {
@@ -67986,7 +68043,7 @@ var lime_utils_AssetCache = function() {
 	this.audio = new haxe_ds_StringMap();
 	this.font = new haxe_ds_StringMap();
 	this.image = new haxe_ds_StringMap();
-	this.version = 229498;
+	this.version = 171043;
 };
 $hxClasses["lime.utils.AssetCache"] = lime_utils_AssetCache;
 lime_utils_AssetCache.__name__ = ["lime","utils","AssetCache"];

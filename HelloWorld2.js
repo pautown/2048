@@ -5577,7 +5577,9 @@ flixel_FlxState.prototype = $extend(flixel_group_FlxTypedGroup.prototype,{
 	,__properties__: $extend(flixel_group_FlxTypedGroup.prototype.__properties__,{set_bgColor:"set_bgColor",get_bgColor:"get_bgColor"})
 });
 var PlayState = function(MaxSize) {
-	this.instructions_text = new flixel_text_FlxText(0,0,0,"Swipe/Arrow Keys to combine tiles to reach 2048!",8);
+	this.touch_start_flx_sprite = new flixel_FlxSprite(0,0);
+	this.touch_start_flx_object = new flixel_FlxObject(0,0,0,0);
+	this.instructions_text = new flixel_text_FlxText(0,0,0,"Swipe/Arrow Keys to combine tiles to reach 2048!",6);
 	this.score_text = new flixel_text_FlxText(0,0,0,"Score: 0",16);
 	this.title_text = new flixel_text_FlxText(0,0,0,"2048.paul.town",20);
 	this.FlxColorArray = flixel_util__$FlxColor_FlxColor_$Impl_$.gradient(-16776961,-16744448,800);
@@ -5613,6 +5615,8 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 	,score_text: null
 	,instructions_text: null
 	,bottom_of_grid_y: null
+	,touch_start_flx_object: null
+	,touch_start_flx_sprite: null
 	,score: null
 	,create: function() {
 		flixel_FlxState.prototype.create.call(this);
@@ -5628,6 +5632,9 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 		this.instructions_text.set_y(this.bottom_of_grid_y + 10);
 		this.instructions_text.set_x(this.grid_magnitude * this.tile_magnitude / 2 - this.instructions_text.get_width() / 2);
 		this.add(this.title_text);
+		this.add(this.touch_start_flx_object);
+		this.add(this.touch_start_flx_sprite);
+		this.touch_start_flx_sprite.set_visible(false);
 		this.title_text.set_y(10);
 		this.title_text.set_x(this.grid_magnitude * this.tile_magnitude / 2 - this.title_text.get_width() / 2);
 	}
@@ -5637,77 +5644,96 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 		var swipe_down = false;
 		var swipe_right = false;
 		var swipe_left = false;
+		var swipe_angle = 0.0;
 		var swiped = false;
-		var _g = 0;
-		var _g1 = flixel_FlxG.swipes;
-		while(_g < _g1.length) {
-			var swipe = _g1[_g];
-			++_g;
-			var tmp = swipe.startPosition.angleBetween(swipe.endPosition) > 45 && swipe.startPosition.angleBetween(swipe.endPosition) < 135;
-			var tmp1 = swipe.startPosition.angleBetween(swipe.endPosition) > 225 && swipe.startPosition.angleBetween(swipe.endPosition) < 315;
-			var tmp2 = swipe.startPosition.angleBetween(swipe.endPosition) > 45 && swipe.startPosition.angleBetween(swipe.endPosition) < 315;
-			var tmp3 = swipe.startPosition.angleBetween(swipe.endPosition) > 135 && swipe.startPosition.angleBetween(swipe.endPosition) < 225;
+		if(flixel_FlxG.mouse._leftButton.current == 2) {
+			this.touch_start_flx_object.set_x(flixel_FlxG.mouse.x);
+			this.touch_start_flx_sprite.set_x(flixel_FlxG.mouse.x);
+			this.touch_start_flx_object.set_y(flixel_FlxG.mouse.x);
+			this.touch_start_flx_sprite.set_y(flixel_FlxG.mouse.y);
 		}
-		var _g2 = 0;
-		var _g11 = this.tile_array;
-		while(_g2 < _g11.length) {
-			var row_array = _g11[_g2];
-			++_g2;
-			var tmp4;
+		var tmp;
+		if(flixel_FlxG.mouse._leftButton.current == -1) {
+			var Sprite = this.touch_start_flx_sprite;
+			var dx = Sprite.x + Sprite.origin.x - flixel_FlxG.mouse.screenX;
+			var dy = Sprite.y + Sprite.origin.y - flixel_FlxG.mouse.screenY;
+			tmp = (Math.sqrt(dx * dx + dy * dy) | 0) >= this.tile_magnitude / 3;
+		} else {
+			tmp = false;
+		}
+		if(tmp) {
+			swipe_angle = flixel_math_FlxAngle.angleBetweenMouse(this.touch_start_flx_object,true);
+			swiped = true;
+		}
+		if(swiped && swipe_angle > -125 && swipe_angle < -55) {
+			swipe_up = true;
+		} else if(swiped && swipe_angle > 55 && swipe_angle < 125) {
+			swipe_down = true;
+		} else if(swiped && swipe_angle > -35 && swipe_angle < 35) {
+			swipe_right = true;
+		} else if(swiped && (swipe_angle <= -125 && swipe_angle >= -180 || swipe_angle >= 125 && swipe_angle < 180)) {
+			swipe_left = true;
+		}
+		var _g = 0;
+		var _g1 = this.tile_array;
+		while(_g < _g1.length) {
+			var row_array = _g1[_g];
+			++_g;
+			var tmp1;
 			var _this = flixel_FlxG.keys.justPressed;
 			if(!_this.keyManager.checkStatus(37,_this.status)) {
-				tmp4 = swipe_left;
+				tmp1 = swipe_left;
 			} else {
-				tmp4 = true;
+				tmp1 = true;
 			}
-			if(tmp4) {
+			if(tmp1) {
 				this.shift_array_left(row_array);
 			}
-			var tmp5;
+			var tmp2;
 			var _this1 = flixel_FlxG.keys.justPressed;
 			if(!_this1.keyManager.checkStatus(39,_this1.status)) {
-				tmp5 = swipe_right;
+				tmp2 = swipe_right;
 			} else {
-				tmp5 = true;
+				tmp2 = true;
 			}
-			if(tmp5) {
+			if(tmp2) {
 				row_array.reverse();
 				this.shift_array_left(row_array);
 				row_array.reverse();
 			}
 		}
-		var tmp6;
+		var tmp3;
 		var _this2 = flixel_FlxG.keys.justPressed;
 		if(!_this2.keyManager.checkStatus(38,_this2.status)) {
-			tmp6 = swipe_up;
+			tmp3 = swipe_up;
 		} else {
-			tmp6 = true;
+			tmp3 = true;
 		}
-		if(tmp6) {
+		if(tmp3) {
 			this.rotate_board_counterclockwise();
-			var _g3 = 0;
-			var _g12 = this.tile_array;
-			while(_g3 < _g12.length) {
-				var row_array1 = _g12[_g3];
-				++_g3;
+			var _g2 = 0;
+			var _g11 = this.tile_array;
+			while(_g2 < _g11.length) {
+				var row_array1 = _g11[_g2];
+				++_g2;
 				this.shift_array_left(row_array1);
 			}
 			this.rotate_board_clockwise();
 		}
-		var tmp7;
+		var tmp4;
 		var _this3 = flixel_FlxG.keys.justPressed;
 		if(!_this3.keyManager.checkStatus(40,_this3.status)) {
-			tmp7 = swipe_down;
+			tmp4 = swipe_down;
 		} else {
-			tmp7 = true;
+			tmp4 = true;
 		}
-		if(tmp7) {
+		if(tmp4) {
 			this.rotate_board_clockwise();
-			var _g4 = 0;
-			var _g13 = this.tile_array;
-			while(_g4 < _g13.length) {
-				var row_array2 = _g13[_g4];
-				++_g4;
+			var _g3 = 0;
+			var _g12 = this.tile_array;
+			while(_g3 < _g12.length) {
+				var row_array2 = _g12[_g3];
+				++_g3;
 				this.shift_array_left(row_array2);
 			}
 			this.rotate_board_counterclockwise();
@@ -68043,7 +68069,7 @@ var lime_utils_AssetCache = function() {
 	this.audio = new haxe_ds_StringMap();
 	this.font = new haxe_ds_StringMap();
 	this.image = new haxe_ds_StringMap();
-	this.version = 171043;
+	this.version = 154461;
 };
 $hxClasses["lime.utils.AssetCache"] = lime_utils_AssetCache;
 lime_utils_AssetCache.__name__ = ["lime","utils","AssetCache"];

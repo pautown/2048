@@ -5579,8 +5579,10 @@ flixel_FlxState.prototype = $extend(flixel_group_FlxTypedGroup.prototype,{
 var PlayState = function(MaxSize) {
 	this.touch_start_flx_sprite = new flixel_FlxSprite(0,0);
 	this.touch_start_flx_object = new flixel_FlxObject(0,0,0,0);
-	this.instructions_text = new flixel_text_FlxText(0,0,0,"Swipe/Arrow Keys to combine tiles to reach 2048!",6);
-	this.score_text = new flixel_text_FlxText(0,0,0,"Score: 0",16);
+	this.instructions_text = new flixel_text_FlxText(0,0,0,"Swipe/Arrow Keys\nCombine tiles to 2048!\n'R' to restart.",13);
+	this.high_score_text = new flixel_text_FlxText(0,0,0,"Record: 0",14);
+	this.score_text = new flixel_text_FlxText(0,0,0,"Score: 0",14);
+	this.angle_text = new flixel_text_FlxText(0,0,0,"2048.paul.town",20);
 	this.title_text = new flixel_text_FlxText(0,0,0,"2048.paul.town",20);
 	this.FlxColorArray = flixel_util__$FlxColor_FlxColor_$Impl_$.gradient(-16776961,-16744448,800);
 	this.drawStyle = { smoothing : false};
@@ -5591,7 +5593,7 @@ var PlayState = function(MaxSize) {
 	this.tiles_moved = false;
 	this.four_random_tile_chance = 0.2;
 	this.grid_magnitude = 4;
-	this.y_offset = 60;
+	this.y_offset = 80;
 	this.x_offset = 10;
 	flixel_FlxState.call(this,MaxSize);
 };
@@ -5612,21 +5614,36 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 	,drawStyle: null
 	,FlxColorArray: null
 	,title_text: null
+	,angle_text: null
 	,score_text: null
+	,high_score_text: null
 	,instructions_text: null
 	,bottom_of_grid_y: null
 	,touch_start_flx_object: null
 	,touch_start_flx_sprite: null
+	,game_save: null
+	,high_score: null
 	,score: null
 	,create: function() {
 		flixel_FlxState.prototype.create.call(this);
+		this.game_save = new flixel_util_FlxSave();
+		this.game_save.bind("PT2048");
+		if(this.game_save.data.high_score == null) {
+			this.game_save.data.high_score = 0;
+		}
+		this.game_save.flush();
+		this.high_score = this.game_save.data.high_score;
+		flixel_FlxG.mouse.set_useSystemCursor(true);
 		this.canvas.makeGraphic(flixel_FlxG.width,flixel_FlxG.height,0,true);
 		this.add(this.canvas);
 		this.reset_board();
 		this.create_score_txts();
 		this.add(this.score_text);
-		this.score_text.set_x(this.grid_magnitude * this.tile_magnitude / 2 - this.score_text.get_width() / 2);
-		this.score_text.set_y(this.y_offset - this.score_text.get_height());
+		this.add(this.high_score_text);
+		this.score_text.set_x(this.high_score_text.set_x(this.x_offset * 1.1));
+		this.score_text.set_y(this.y_offset - this.score_text.get_height() * 2);
+		this.high_score_text.set_y(this.y_offset - this.high_score_text.get_height());
+		this.update_score_display();
 		this.bottom_of_grid_y = this.grid_magnitude * this.tile_magnitude + this.y_offset;
 		this.add(this.instructions_text);
 		this.instructions_text.set_y(this.bottom_of_grid_y + 10);
@@ -5635,8 +5652,13 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 		this.add(this.touch_start_flx_object);
 		this.add(this.touch_start_flx_sprite);
 		this.touch_start_flx_sprite.set_visible(false);
+		this.add(this.angle_text);
+		this.angle_text.set_visible(false);
 		this.title_text.set_y(10);
 		this.title_text.set_x(this.grid_magnitude * this.tile_magnitude / 2 - this.title_text.get_width() / 2);
+		this.update_score_display();
+		this.update_visual_grid(this.grid_magnitude,this.grid_magnitude);
+		this.update_board();
 	}
 	,update: function(elapsed) {
 		flixel_FlxState.prototype.update.call(this,elapsed);
@@ -5649,7 +5671,7 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 		if(flixel_FlxG.mouse._leftButton.current == 2) {
 			this.touch_start_flx_object.set_x(flixel_FlxG.mouse.x);
 			this.touch_start_flx_sprite.set_x(flixel_FlxG.mouse.x);
-			this.touch_start_flx_object.set_y(flixel_FlxG.mouse.x);
+			this.touch_start_flx_object.set_y(flixel_FlxG.mouse.y);
 			this.touch_start_flx_sprite.set_y(flixel_FlxG.mouse.y);
 		}
 		var tmp;
@@ -5657,21 +5679,22 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 			var Sprite = this.touch_start_flx_sprite;
 			var dx = Sprite.x + Sprite.origin.x - flixel_FlxG.mouse.screenX;
 			var dy = Sprite.y + Sprite.origin.y - flixel_FlxG.mouse.screenY;
-			tmp = (Math.sqrt(dx * dx + dy * dy) | 0) >= this.tile_magnitude / 3;
+			tmp = (Math.sqrt(dx * dx + dy * dy) | 0) >= this.tile_magnitude / 2;
 		} else {
 			tmp = false;
 		}
 		if(tmp) {
 			swipe_angle = flixel_math_FlxAngle.angleBetweenMouse(this.touch_start_flx_object,true);
+			this.angle_text.set_text(swipe_angle == null ? "null" : "" + swipe_angle);
 			swiped = true;
 		}
-		if(swiped && swipe_angle > -125 && swipe_angle < -55) {
+		if(swiped && swipe_angle > -135 && swipe_angle < -45) {
 			swipe_up = true;
-		} else if(swiped && swipe_angle > 55 && swipe_angle < 125) {
+		} else if(swiped && swipe_angle > 45 && swipe_angle < 135) {
 			swipe_down = true;
-		} else if(swiped && swipe_angle > -35 && swipe_angle < 35) {
+		} else if(swiped && swipe_angle > -45 && swipe_angle < 45) {
 			swipe_right = true;
-		} else if(swiped && (swipe_angle <= -125 && swipe_angle >= -180 || swipe_angle >= 125 && swipe_angle < 180)) {
+		} else if(swiped && (swipe_angle <= -135 && swipe_angle >= -180 || swipe_angle >= 135 && swipe_angle < 180)) {
 			swipe_left = true;
 		}
 		var _g = 0;
@@ -5740,6 +5763,7 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 		}
 		var _this4 = flixel_FlxG.keys.justPressed;
 		if(_this4.keyManager.checkStatus(82,_this4.status)) {
+			flixel_FlxG.camera.shake(0.01,0.2);
 			this.reset_board();
 		}
 		if(flixel_FlxG.keys.justPressed.get_ANY() || swiped) {
@@ -5755,6 +5779,12 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 	}
 	,update_score_display: function() {
 		this.score_text.set_text("Score: " + Std.string(this.score));
+		if(this.score > this.high_score) {
+			this.high_score = this.score;
+			this.game_save.data.high_score = this.high_score;
+			this.game_save.flush();
+		}
+		this.high_score_text.set_text("Record: " + Std.string(this.high_score));
 	}
 	,reset_board: function() {
 		this.score = 0;
@@ -68069,7 +68099,7 @@ var lime_utils_AssetCache = function() {
 	this.audio = new haxe_ds_StringMap();
 	this.font = new haxe_ds_StringMap();
 	this.image = new haxe_ds_StringMap();
-	this.version = 154461;
+	this.version = 410305;
 };
 $hxClasses["lime.utils.AssetCache"] = lime_utils_AssetCache;
 lime_utils_AssetCache.__name__ = ["lime","utils","AssetCache"];

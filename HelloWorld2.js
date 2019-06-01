@@ -5587,13 +5587,15 @@ var PlayState = function(MaxSize) {
 	this.FlxColorArray = flixel_util__$FlxColor_FlxColor_$Impl_$.gradient(-16776961,-16744448,800);
 	this.drawStyle = { smoothing : false};
 	this.lineStyle = { color : -1, thickness : 3};
+	this.lineStyle_indicator = { color : -16776961, thickness : 6};
 	this.canvas = new flixel_FlxSprite();
 	this.tile_magnitude = 60;
 	this.tile_texts = new flixel_group_FlxTypedGroup(16);
+	this.new_tile_indicator = new flixel_FlxSprite();
 	this.tiles_moved = false;
 	this.four_random_tile_chance = 0.2;
 	this.grid_magnitude = 4;
-	this.y_offset = 80;
+	this.y_offset = 65;
 	this.x_offset = 10;
 	flixel_FlxState.call(this,MaxSize);
 };
@@ -5607,9 +5609,11 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 	,grid_magnitude: null
 	,four_random_tile_chance: null
 	,tiles_moved: null
+	,new_tile_indicator: null
 	,tile_texts: null
 	,tile_magnitude: null
 	,canvas: null
+	,lineStyle_indicator: null
 	,lineStyle: null
 	,drawStyle: null
 	,FlxColorArray: null
@@ -5641,11 +5645,12 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 		this.add(this.score_text);
 		this.add(this.high_score_text);
 		this.score_text.set_x(this.high_score_text.set_x(this.x_offset * 1.1));
-		this.score_text.set_y(this.y_offset - this.score_text.get_height() * 2);
+		this.score_text.set_y(this.y_offset - this.score_text.get_height());
 		this.high_score_text.set_y(this.y_offset - this.high_score_text.get_height());
 		this.update_score_display();
 		this.bottom_of_grid_y = this.grid_magnitude * this.tile_magnitude + this.y_offset;
 		this.add(this.instructions_text);
+		this.instructions_text.set_alignment("center");
 		this.instructions_text.set_y(this.bottom_of_grid_y + 10);
 		this.instructions_text.set_x(this.grid_magnitude * this.tile_magnitude / 2 - this.instructions_text.get_width() / 2);
 		this.add(this.title_text);
@@ -5656,6 +5661,10 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 		this.angle_text.set_visible(false);
 		this.title_text.set_y(10);
 		this.title_text.set_x(this.grid_magnitude * this.tile_magnitude / 2 - this.title_text.get_width() / 2);
+		this.new_tile_indicator.makeGraphic(this.tile_magnitude,this.tile_magnitude,0,true);
+		flixel_util_FlxSpriteUtil.drawRoundRect(this.new_tile_indicator,0,0,this.tile_magnitude,this.tile_magnitude,20,20,-1,this.lineStyle_indicator,this.drawStyle);
+		this.add(this.new_tile_indicator);
+		this.new_tile_indicator.set_alpha(0);
 		this.update_score_display();
 		this.update_visual_grid(this.grid_magnitude,this.grid_magnitude);
 		this.update_board();
@@ -5668,6 +5677,12 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 		var swipe_left = false;
 		var swipe_angle = 0.0;
 		var swiped = false;
+		if(this.new_tile_indicator.alpha > 0 && this.new_tile_indicator.alpha < 0.1) {
+			this.new_tile_indicator.set_alpha(0);
+		} else if(this.new_tile_indicator.alpha > 0) {
+			var _g = this.new_tile_indicator;
+			_g.set_alpha(_g.alpha * 0.95);
+		}
 		if(flixel_FlxG.mouse._leftButton.current == 2) {
 			this.touch_start_flx_object.set_x(flixel_FlxG.mouse.x);
 			this.touch_start_flx_sprite.set_x(flixel_FlxG.mouse.x);
@@ -5697,11 +5712,11 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 		} else if(swiped && (swipe_angle <= -135 && swipe_angle >= -180 || swipe_angle >= 135 && swipe_angle < 180)) {
 			swipe_left = true;
 		}
-		var _g = 0;
-		var _g1 = this.tile_array;
-		while(_g < _g1.length) {
-			var row_array = _g1[_g];
-			++_g;
+		var _g1 = 0;
+		var _g11 = this.tile_array;
+		while(_g1 < _g11.length) {
+			var row_array = _g11[_g1];
+			++_g1;
 			var tmp1;
 			var _this = flixel_FlxG.keys.justPressed;
 			if(!_this.keyManager.checkStatus(37,_this.status)) {
@@ -5735,9 +5750,9 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 		if(tmp3) {
 			this.rotate_board_counterclockwise();
 			var _g2 = 0;
-			var _g11 = this.tile_array;
-			while(_g2 < _g11.length) {
-				var row_array1 = _g11[_g2];
+			var _g12 = this.tile_array;
+			while(_g2 < _g12.length) {
+				var row_array1 = _g12[_g2];
 				++_g2;
 				this.shift_array_left(row_array1);
 			}
@@ -5753,9 +5768,9 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 		if(tmp4) {
 			this.rotate_board_clockwise();
 			var _g3 = 0;
-			var _g12 = this.tile_array;
-			while(_g3 < _g12.length) {
-				var row_array2 = _g12[_g3];
+			var _g13 = this.tile_array;
+			while(_g3 < _g13.length) {
+				var row_array2 = _g13[_g3];
 				++_g3;
 				this.shift_array_left(row_array2);
 			}
@@ -5778,13 +5793,14 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 		}
 	}
 	,update_score_display: function() {
-		this.score_text.set_text("Score: " + Std.string(this.score));
+		this.score_text.set_text("SCORE: " + Std.string(this.score));
 		if(this.score > this.high_score) {
 			this.high_score = this.score;
 			this.game_save.data.high_score = this.high_score;
 			this.game_save.flush();
 		}
-		this.high_score_text.set_text("Record: " + Std.string(this.high_score));
+		this.high_score_text.set_text("HIGH: " + Std.string(this.high_score));
+		this.high_score_text.set_x(this.grid_magnitude * this.tile_magnitude - this.high_score_text.get_width());
 	}
 	,reset_board: function() {
 		this.score = 0;
@@ -5942,6 +5958,9 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 		}
 		if(possible_blank_tiles.length != 0) {
 			this.tile_array[possible_blank_tiles[0][0]][possible_blank_tiles[0][1]] = [tile_value,false];
+			this.new_tile_indicator.set_x(this.x_offset + possible_blank_tiles[0][1] * this.tile_magnitude);
+			this.new_tile_indicator.set_y(this.y_offset + possible_blank_tiles[0][0] * this.tile_magnitude);
+			this.new_tile_indicator.set_alpha(3);
 		}
 	}
 	,new_blank_grid: function() {
@@ -68099,7 +68118,7 @@ var lime_utils_AssetCache = function() {
 	this.audio = new haxe_ds_StringMap();
 	this.font = new haxe_ds_StringMap();
 	this.image = new haxe_ds_StringMap();
-	this.version = 410305;
+	this.version = 749423;
 };
 $hxClasses["lime.utils.AssetCache"] = lime_utils_AssetCache;
 lime_utils_AssetCache.__name__ = ["lime","utils","AssetCache"];

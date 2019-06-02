@@ -5577,10 +5577,18 @@ flixel_FlxState.prototype = $extend(flixel_group_FlxTypedGroup.prototype,{
 	,__properties__: $extend(flixel_group_FlxTypedGroup.prototype.__properties__,{set_bgColor:"set_bgColor",get_bgColor:"get_bgColor"})
 });
 var PlayState = function(MaxSize) {
+	this.menu_selector = 0;
+	this.mode_selector_instructions_text = new flixel_text_FlxText(0,0,0,"Swipe/Arrow Keys\n Swipe/Arrow UP to start",13);
+	this.mode_selector_text = new flixel_text_FlxText(0,0,0,"Mode: ",16);
+	this.mode_array = ["Classic","Speed"];
+	this.game_state = "menu";
+	this.added_to_score = 0;
+	this.game_save = new flixel_util_FlxSave();
 	this.touch_start_flx_sprite = new flixel_FlxSprite(0,0);
 	this.touch_start_flx_object = new flixel_FlxObject(0,0,0,0);
 	this.instructions_text = new flixel_text_FlxText(0,0,0,"Swipe/Arrow Keys\nCombine tiles to 2048!\n'R' to restart.",13);
 	this.high_score_text = new flixel_text_FlxText(0,0,0,"Record: 0",14);
+	this.add_score_text = new flixel_text_FlxText(0,0,0,"",8);
 	this.score_text = new flixel_text_FlxText(0,0,0,"Score: 0",14);
 	this.angle_text = new flixel_text_FlxText(0,0,0,"2048.paul.town",20);
 	this.title_text = new flixel_text_FlxText(0,0,0,"2048.paul.town",20);
@@ -5595,7 +5603,7 @@ var PlayState = function(MaxSize) {
 	this.tiles_moved = false;
 	this.four_random_tile_chance = 0.2;
 	this.grid_magnitude = 4;
-	this.y_offset = 65;
+	this.y_offset = 68;
 	this.x_offset = 10;
 	flixel_FlxState.call(this,MaxSize);
 };
@@ -5620,6 +5628,7 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 	,title_text: null
 	,angle_text: null
 	,score_text: null
+	,add_score_text: null
 	,high_score_text: null
 	,instructions_text: null
 	,bottom_of_grid_y: null
@@ -5627,22 +5636,55 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 	,touch_start_flx_sprite: null
 	,game_save: null
 	,high_score: null
+	,added_to_score: null
+	,game_state: null
+	,mode_array: null
+	,mode_selector_text: null
+	,mode_selector_instructions_text: null
+	,menu_selector: null
 	,score: null
 	,create: function() {
 		flixel_FlxState.prototype.create.call(this);
-		this.game_save = new flixel_util_FlxSave();
-		this.game_save.bind("PT2048");
+		flixel_FlxG.mouse.set_useSystemCursor(true);
+		this.add(this.title_text);
+		this.title_text.set_y(10);
+		this.title_text.set_x(this.grid_magnitude * this.tile_magnitude / 2 - this.title_text.get_width() / 2);
+		this.create_main_menu();
+		this.show_main_menu();
+	}
+	,create_main_menu: function() {
+		this.add(this.mode_selector_text);
+		this.add(this.mode_selector_instructions_text);
+		this.mode_selector_text.set_alignment(this.mode_selector_instructions_text.set_alignment("center"));
+		this.mode_selector_text.set_y(this.title_text.y + this.title_text.get_height() + 20);
+		this.mode_selector_text.set_x(this.title_text.x + this.title_text.get_width() / 2 - this.mode_selector_text.get_width() / 2);
+		this.mode_selector_instructions_text.set_y(this.mode_selector_text.y + this.mode_selector_text.get_height() + 20);
+		this.mode_selector_instructions_text.set_x(this.title_text.x + this.title_text.get_width() / 2 - this.mode_selector_instructions_text.get_width() / 2);
+	}
+	,destroy_main_menu: function() {
+		this.remove(this.mode_selector_text);
+		this.remove(this.mode_selector_instructions_text);
+	}
+	,show_main_menu: function() {
+	}
+	,create_play_screen: function() {
+		var _gthis = this;
+		if(this.mode_array[this.menu_selector] == "Classic") {
+			this.game_save.bind("PT2048");
+		} else {
+			this.game_save.bind("PT2048" + this.mode_array[this.menu_selector]);
+		}
 		if(this.game_save.data.high_score == null) {
 			this.game_save.data.high_score = 0;
 		}
 		this.game_save.flush();
 		this.high_score = this.game_save.data.high_score;
-		flixel_FlxG.mouse.set_useSystemCursor(true);
 		this.canvas.makeGraphic(flixel_FlxG.width,flixel_FlxG.height,0,true);
 		this.add(this.canvas);
 		this.reset_board();
 		this.create_score_txts();
 		this.add(this.score_text);
+		this.add(this.add_score_text);
 		this.add(this.high_score_text);
 		this.score_text.set_x(this.high_score_text.set_x(this.x_offset * 1.1));
 		this.score_text.set_y(this.y_offset - this.score_text.get_height());
@@ -5651,16 +5693,14 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 		this.bottom_of_grid_y = this.grid_magnitude * this.tile_magnitude + this.y_offset;
 		this.add(this.instructions_text);
 		this.instructions_text.set_alignment("center");
+		this.instructions_text.set_text("Game Mode: " + this.mode_array[this.menu_selector] + "\nSwipe/Arrow Keys\nCombine tiles to 2048!\n'R' to restart.");
 		this.instructions_text.set_y(this.bottom_of_grid_y + 10);
 		this.instructions_text.set_x(this.grid_magnitude * this.tile_magnitude / 2 - this.instructions_text.get_width() / 2);
-		this.add(this.title_text);
 		this.add(this.touch_start_flx_object);
 		this.add(this.touch_start_flx_sprite);
 		this.touch_start_flx_sprite.set_visible(false);
 		this.add(this.angle_text);
 		this.angle_text.set_visible(false);
-		this.title_text.set_y(10);
-		this.title_text.set_x(this.grid_magnitude * this.tile_magnitude / 2 - this.title_text.get_width() / 2);
 		this.new_tile_indicator.makeGraphic(this.tile_magnitude,this.tile_magnitude,0,true);
 		flixel_util_FlxSpriteUtil.drawRoundRect(this.new_tile_indicator,0,0,this.tile_magnitude,this.tile_magnitude,20,20,-1,this.lineStyle_indicator,this.drawStyle);
 		this.add(this.new_tile_indicator);
@@ -5668,21 +5708,25 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 		this.update_score_display();
 		this.update_visual_grid(this.grid_magnitude,this.grid_magnitude);
 		this.update_board();
+		var timer = new haxe_Timer(1500);
+		timer.run = function() {
+			if(_gthis.mode_array[_gthis.menu_selector] == "Speed") {
+				_gthis.add_random_non_zero_tile();
+				_gthis.update_board();
+				_gthis.update_visual_grid(_gthis.grid_magnitude,_gthis.grid_magnitude);
+				_gthis.reset_board_array();
+			}
+		};
 	}
 	,update: function(elapsed) {
 		flixel_FlxState.prototype.update.call(this,elapsed);
-		var swipe_up = false;
-		var swipe_down = false;
-		var swipe_right = false;
-		var swipe_left = false;
+		var input_up = false;
+		var input_down = false;
+		var input_right = false;
+		var input_left = false;
+		var input_any = true;
 		var swipe_angle = 0.0;
 		var swiped = false;
-		if(this.new_tile_indicator.alpha > 0 && this.new_tile_indicator.alpha < 0.1) {
-			this.new_tile_indicator.set_alpha(0);
-		} else if(this.new_tile_indicator.alpha > 0) {
-			var _g = this.new_tile_indicator;
-			_g.set_alpha(_g.alpha * 0.95);
-		}
 		if(flixel_FlxG.mouse._leftButton.current == 2) {
 			this.touch_start_flx_object.set_x(flixel_FlxG.mouse.x);
 			this.touch_start_flx_sprite.set_x(flixel_FlxG.mouse.x);
@@ -5704,92 +5748,129 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 			swiped = true;
 		}
 		if(swiped && swipe_angle > -135 && swipe_angle < -45) {
-			swipe_up = true;
+			input_up = true;
 		} else if(swiped && swipe_angle > 45 && swipe_angle < 135) {
-			swipe_down = true;
+			input_down = true;
 		} else if(swiped && swipe_angle > -45 && swipe_angle < 45) {
-			swipe_right = true;
+			input_right = true;
 		} else if(swiped && (swipe_angle <= -135 && swipe_angle >= -180 || swipe_angle >= 135 && swipe_angle < 180)) {
-			swipe_left = true;
+			input_left = true;
 		}
-		var _g1 = 0;
-		var _g11 = this.tile_array;
-		while(_g1 < _g11.length) {
-			var row_array = _g11[_g1];
-			++_g1;
-			var tmp1;
-			var _this = flixel_FlxG.keys.justPressed;
-			if(!_this.keyManager.checkStatus(37,_this.status)) {
-				tmp1 = swipe_left;
-			} else {
-				tmp1 = true;
-			}
-			if(tmp1) {
-				this.shift_array_left(row_array);
-			}
-			var tmp2;
-			var _this1 = flixel_FlxG.keys.justPressed;
-			if(!_this1.keyManager.checkStatus(39,_this1.status)) {
-				tmp2 = swipe_right;
-			} else {
-				tmp2 = true;
-			}
-			if(tmp2) {
-				row_array.reverse();
-				this.shift_array_left(row_array);
-				row_array.reverse();
-			}
+		var _this = flixel_FlxG.keys.justPressed;
+		if(_this.keyManager.checkStatus(37,_this.status)) {
+			input_left = true;
 		}
-		var tmp3;
+		var _this1 = flixel_FlxG.keys.justPressed;
+		if(_this1.keyManager.checkStatus(39,_this1.status)) {
+			input_right = true;
+		}
 		var _this2 = flixel_FlxG.keys.justPressed;
-		if(!_this2.keyManager.checkStatus(38,_this2.status)) {
-			tmp3 = swipe_up;
-		} else {
-			tmp3 = true;
+		if(_this2.keyManager.checkStatus(38,_this2.status)) {
+			input_up = true;
 		}
-		if(tmp3) {
-			this.rotate_board_counterclockwise();
-			var _g2 = 0;
-			var _g12 = this.tile_array;
-			while(_g2 < _g12.length) {
-				var row_array1 = _g12[_g2];
-				++_g2;
-				this.shift_array_left(row_array1);
-			}
-			this.rotate_board_clockwise();
-		}
-		var tmp4;
 		var _this3 = flixel_FlxG.keys.justPressed;
-		if(!_this3.keyManager.checkStatus(40,_this3.status)) {
-			tmp4 = swipe_down;
-		} else {
-			tmp4 = true;
+		if(_this3.keyManager.checkStatus(40,_this3.status)) {
+			input_down = true;
 		}
-		if(tmp4) {
-			this.rotate_board_clockwise();
-			var _g3 = 0;
-			var _g13 = this.tile_array;
-			while(_g3 < _g13.length) {
-				var row_array2 = _g13[_g3];
-				++_g3;
-				this.shift_array_left(row_array2);
+		if(input_left || input_right || input_up || input_down) {
+			input_any = true;
+		}
+		if(this.game_state == "menu") {
+			if(input_left) {
+				this.menu_selector--;
+			} else if(input_right) {
+				this.menu_selector++;
 			}
-			this.rotate_board_counterclockwise();
-		}
-		var _this4 = flixel_FlxG.keys.justPressed;
-		if(_this4.keyManager.checkStatus(82,_this4.status)) {
-			flixel_FlxG.camera.shake(0.01,0.2);
-			this.reset_board();
-		}
-		if(flixel_FlxG.keys.justPressed.get_ANY() || swiped) {
-			if(this.tiles_moved) {
-				this.add_random_non_zero_tile();
+			if(this.menu_selector < 0) {
+				this.menu_selector = this.mode_array.length - 1;
+			} else if(this.menu_selector > this.mode_array.length - 1) {
+				this.menu_selector = 0;
 			}
-			this.tiles_moved = false;
-			this.update_board();
-			this.update_score_display();
-			this.update_visual_grid(this.grid_magnitude,this.grid_magnitude);
-			this.reset_board_array();
+			if(input_any) {
+				this.mode_selector_text.set_text("< " + this.mode_array[this.menu_selector] + " (" + Std.string(this.menu_selector + 1) + "/" + Std.string(this.mode_array.length) + ") >");
+			}
+			this.mode_selector_text.set_x(this.title_text.x + this.title_text.get_width() / 2 - this.mode_selector_text.get_width() / 2);
+			if(input_up) {
+				this.destroy_main_menu();
+				this.create_play_screen();
+				this.game_state = "playing";
+			}
+		} else if(this.game_state == "playing") {
+			if(this.new_tile_indicator.alpha > 0 && this.new_tile_indicator.alpha < 0.1) {
+				this.new_tile_indicator.set_alpha(0);
+			} else if(this.new_tile_indicator.alpha > 0) {
+				var _g = this.new_tile_indicator;
+				_g.set_alpha(_g.alpha * 0.95);
+			}
+			var _g1 = 0;
+			var _g11 = this.tile_array;
+			while(_g1 < _g11.length) {
+				var row_array = _g11[_g1];
+				++_g1;
+				if(input_left) {
+					this.shift_array_left(row_array);
+				}
+				if(input_right) {
+					row_array.reverse();
+					this.shift_array_left(row_array);
+					row_array.reverse();
+				}
+			}
+			if(input_up) {
+				this.rotate_board_counterclockwise();
+				var _g2 = 0;
+				var _g12 = this.tile_array;
+				while(_g2 < _g12.length) {
+					var row_array1 = _g12[_g2];
+					++_g2;
+					this.shift_array_left(row_array1);
+				}
+				this.rotate_board_clockwise();
+			}
+			if(input_down) {
+				this.rotate_board_clockwise();
+				var _g3 = 0;
+				var _g13 = this.tile_array;
+				while(_g3 < _g13.length) {
+					var row_array2 = _g13[_g3];
+					++_g3;
+					this.shift_array_left(row_array2);
+				}
+				this.rotate_board_counterclockwise();
+			}
+			var _this4 = flixel_FlxG.keys.justPressed;
+			if(_this4.keyManager.checkStatus(82,_this4.status)) {
+				flixel_FlxG.camera.shake(0.01,0.2);
+				this.reset_board();
+			}
+			if(flixel_FlxG.keys.justPressed.get_ANY() || swiped) {
+				if(this.tiles_moved) {
+					this.add_random_non_zero_tile();
+				}
+				if(this.added_to_score > 0) {
+					this.add_score_text.set_text("+" + Std.string(this.added_to_score));
+					this.add_score_text.set_alpha(3);
+				}
+				this.added_to_score = 0;
+				this.tiles_moved = false;
+				this.update_board();
+				this.update_score_display();
+				this.update_visual_grid(this.grid_magnitude,this.grid_magnitude);
+				this.reset_board_array();
+			}
+			this.update_add_score_display();
+		}
+	}
+	,update_add_score_display: function() {
+		if(this.add_score_text.alpha > 0) {
+			var _g = this.add_score_text;
+			_g.set_alpha(_g.alpha * 0.90);
+			this.add_score_text.set_x(this.score_text.x - this.add_score_text.get_width() + this.score_text.get_width());
+			this.add_score_text.set_y(this.score_text.y - this.add_score_text.get_height() / 1.2);
+			if(this.add_score_text.alpha < 0.1) {
+				this.add_score_text.set_alpha(0);
+				this.add_score_text.set_text("");
+			}
 		}
 	}
 	,update_score_display: function() {
@@ -5998,6 +6079,7 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 					row_array[i - tiles_to_shift - 1][1] = true;
 					row_array[i - tiles_to_shift - 1][0] = row_array[i - tiles_to_shift][0] + row_array[i - tiles_to_shift - 1][0];
 					this.score += row_array[i - tiles_to_shift - 1][0] | 0;
+					this.added_to_score += row_array[i - tiles_to_shift - 1][0] | 0;
 					row_array[i - tiles_to_shift][0] = 0;
 				}
 			}
@@ -68118,7 +68200,7 @@ var lime_utils_AssetCache = function() {
 	this.audio = new haxe_ds_StringMap();
 	this.font = new haxe_ds_StringMap();
 	this.image = new haxe_ds_StringMap();
-	this.version = 749423;
+	this.version = 228252;
 };
 $hxClasses["lime.utils.AssetCache"] = lime_utils_AssetCache;
 lime_utils_AssetCache.__name__ = ["lime","utils","AssetCache"];

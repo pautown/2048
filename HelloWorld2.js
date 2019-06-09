@@ -5748,7 +5748,7 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 		timer.run = function() {
 			if(_gthis.game_state == "playing") {
 				var game_over = false;
-				if(_gthis.mode_array[_gthis.menu_selector] == "Classic" && _gthis.check_board_full() && !_gthis.check_can_move()) {
+				if(_gthis.mode_array[_gthis.menu_selector] == "Classic" && _gthis.check_board_full() && _gthis.check_can_move() == false) {
 					game_over = true;
 				} else if(_gthis.mode_array[_gthis.menu_selector] == "Speed" && _gthis.check_board_full()) {
 					game_over = true;
@@ -5934,88 +5934,67 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 	}
 	,check_can_move: function() {
 		var can_move = false;
-		var tile_array_copy = this.tile_array.slice();
-		var pre_values_array = [];
-		var post_values_array = [];
+		var i = 0;
+		var i2 = 0;
+		var nested_array = [];
+		var vertical_nested_array = [];
 		var _g = 0;
-		while(_g < tile_array_copy.length) {
-			var row_array = tile_array_copy[_g];
+		var _g1 = this.tile_array;
+		while(_g < _g1.length) {
+			var row = _g1[_g];
 			++_g;
-			var _g1 = 0;
-			while(_g1 < row_array.length) {
-				var item = row_array[_g1];
-				++_g1;
-				pre_values_array.push(item[0]);
+			var row_array = [];
+			var _g2 = 0;
+			while(_g2 < row.length) {
+				var tile = row[_g2];
+				++_g2;
+				row_array.push(this.tile_array[i][i2][0]);
+				++i2;
 			}
+			i2 = 0;
+			++i;
+			nested_array.push(row_array.slice());
 		}
-		var _g2 = 0;
-		while(_g2 < tile_array_copy.length) {
-			var row_array1 = tile_array_copy[_g2];
-			++_g2;
-			row_array1 = this.shift_array_left(row_array1.slice());
-		}
+		i = 0;
+		i2 = 0;
+		haxe_Log.trace("H:" + Std.string(nested_array),{ fileName : "PlayState.hx", lineNumber : 305, className : "PlayState", methodName : "check_can_move"});
 		var _g3 = 0;
-		while(_g3 < tile_array_copy.length) {
-			var row_array2 = tile_array_copy[_g3];
+		while(_g3 < nested_array.length) {
+			var row1 = nested_array[_g3];
 			++_g3;
+			row1.reverse();
+		}
+		vertical_nested_array = this.rotate_array_counterclockwise(nested_array.slice());
+		haxe_Log.trace("V:" + Std.string(vertical_nested_array),{ fileName : "PlayState.hx", lineNumber : 309, className : "PlayState", methodName : "check_can_move"});
+		var _g4 = 0;
+		while(_g4 < nested_array.length) {
+			var row2 = nested_array[_g4];
+			++_g4;
 			var _g11 = 0;
-			while(_g11 < row_array2.length) {
-				var item1 = row_array2[_g11];
+			while(_g11 < row2.length) {
+				var tile1 = row2[_g11];
 				++_g11;
-				post_values_array.push(item1[0]);
+				if(i < row2.length - 1 && row2[i] == row2[i + 1]) {
+					can_move = true;
+				}
+				++i;
 			}
+			i = 0;
 		}
-		haxe_Log.trace("PRE : " + pre_values_array.toString(),{ fileName : "PlayState.hx", lineNumber : 294, className : "PlayState", methodName : "check_can_move"});
-		haxe_Log.trace("POST: " + post_values_array.toString(),{ fileName : "PlayState.hx", lineNumber : 295, className : "PlayState", methodName : "check_can_move"});
-		var _g12 = 0;
-		var _g4 = pre_values_array.length - 1;
-		while(_g12 < _g4) {
-			var i = _g12++;
-			if(pre_values_array[i] != post_values_array[i]) {
-				can_move = true;
-			}
-		}
-		tile_array_copy = this.tile_array.slice();
-		tile_array_copy = this.rotate_board_counterclockwise(tile_array_copy);
-		pre_values_array = [];
-		post_values_array = [];
 		var _g5 = 0;
-		while(_g5 < tile_array_copy.length) {
-			var row_array3 = tile_array_copy[_g5];
+		while(_g5 < vertical_nested_array.length) {
+			var row3 = vertical_nested_array[_g5];
 			++_g5;
-			var _g13 = 0;
-			while(_g13 < row_array3.length) {
-				var item2 = row_array3[_g13];
-				++_g13;
-				pre_values_array.push(item2[0]);
+			var _g12 = 0;
+			while(_g12 < row3.length) {
+				var tile2 = row3[_g12];
+				++_g12;
+				if(i < row3.length - 1 && row3[i] == row3[i + 1]) {
+					can_move = true;
+				}
+				++i;
 			}
-		}
-		var _g6 = 0;
-		while(_g6 < tile_array_copy.length) {
-			var row_array4 = tile_array_copy[_g6];
-			++_g6;
-			row_array4 = this.shift_array_left(row_array4.slice());
-		}
-		var _g7 = 0;
-		while(_g7 < tile_array_copy.length) {
-			var row_array5 = tile_array_copy[_g7];
-			++_g7;
-			var _g14 = 0;
-			while(_g14 < row_array5.length) {
-				var item3 = row_array5[_g14];
-				++_g14;
-				post_values_array.push(item3[0]);
-			}
-		}
-		haxe_Log.trace("PRE : " + pre_values_array.toString(),{ fileName : "PlayState.hx", lineNumber : 305, className : "PlayState", methodName : "check_can_move"});
-		haxe_Log.trace("POST: " + post_values_array.toString(),{ fileName : "PlayState.hx", lineNumber : 306, className : "PlayState", methodName : "check_can_move"});
-		var _g15 = 0;
-		var _g8 = pre_values_array.length - 1;
-		while(_g15 < _g8) {
-			var i1 = _g15++;
-			if(pre_values_array[i1] != post_values_array[i1]) {
-				can_move = true;
-			}
+			i = 0;
 		}
 		return can_move;
 	}
@@ -6143,6 +6122,44 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 			while(_g5 < _g4) {
 				var y = _g5++;
 				_g3.push([0,false]);
+			}
+			_g.push(_g3);
+		}
+		var tile_array_copy = _g;
+		var row_i = 0;
+		var column_i = 0;
+		var _g11 = 0;
+		while(_g11 < array_to_rotate.length) {
+			var row_array = array_to_rotate[_g11];
+			++_g11;
+			row_array.reverse();
+		}
+		while(column_i < tile_array_copy.length) {
+			var _g12 = 0;
+			while(_g12 < tile_array_copy.length) {
+				var row = tile_array_copy[_g12];
+				++_g12;
+				tile_array_copy[column_i][row_i] = array_to_rotate[row_i][column_i];
+				++row_i;
+			}
+			row_i = 0;
+			++column_i;
+		}
+		array_to_rotate = tile_array_copy.slice();
+		return array_to_rotate;
+	}
+	,rotate_array_counterclockwise: function(array_to_rotate) {
+		var _g = [];
+		var _g2 = 0;
+		var _g1 = array_to_rotate.length;
+		while(_g2 < _g1) {
+			var x = _g2++;
+			var _g3 = [];
+			var _g5 = 0;
+			var _g4 = array_to_rotate.length;
+			while(_g5 < _g4) {
+				var y = _g5++;
+				_g3.push(0);
 			}
 			_g.push(_g3);
 		}
@@ -68373,7 +68390,7 @@ var lime_utils_AssetCache = function() {
 	this.audio = new haxe_ds_StringMap();
 	this.font = new haxe_ds_StringMap();
 	this.image = new haxe_ds_StringMap();
-	this.version = 417704;
+	this.version = 870160;
 };
 $hxClasses["lime.utils.AssetCache"] = lime_utils_AssetCache;
 lime_utils_AssetCache.__name__ = ["lime","utils","AssetCache"];

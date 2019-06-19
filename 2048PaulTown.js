@@ -5593,6 +5593,7 @@ var PlayState = function(MaxSize) {
 	this.score_text = new flixel_text_FlxText(0,0,0,"Score: 0",14);
 	this.angle_text = new flixel_text_FlxText(0,0,0,"2048.paul.town",20);
 	this.game_over_text = new flixel_text_FlxText(0,0,0,"GAME OVER.\nUP to restart.\nDOWN to return to menu.",12);
+	this.footer_text = new flixel_text_FlxText(0,0,0,"paul.town 2019 - more at index.paul.town",1);
 	this.title_text = new flixel_text_FlxText(0,0,0,"2048.paul.town",20);
 	this.FlxColorArray = flixel_util__$FlxColor_FlxColor_$Impl_$.gradient(-16776961,-16744448,800);
 	this.drawStyle = { smoothing : false};
@@ -5631,6 +5632,7 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 	,drawStyle: null
 	,FlxColorArray: null
 	,title_text: null
+	,footer_text: null
 	,game_over_text: null
 	,angle_text: null
 	,score_text: null
@@ -5658,6 +5660,7 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 		this.set_tile_magnitude();
 		flixel_FlxG.mouse.set_useSystemCursor(true);
 		this.add(this.title_text);
+		this.add(this.footer_text);
 		this.title_text.set_y(10);
 		this.title_text.set_x(this.grid_magnitude * this.tile_magnitude / 2 - this.title_text.get_width() / 2 + this.x_offset);
 		this.create_main_menu();
@@ -5709,6 +5712,13 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 			_g.set_size(_g1 + 1);
 		}
 		this.title_text.set_x(this.grid_magnitude * this.tile_magnitude / 2 - this.title_text.get_width() / 2 + this.x_offset);
+		while(this.footer_text.textField.get_width() < this.tile_magnitude * this.grid_magnitude * 0.8) {
+			var _g2 = this.footer_text;
+			var _g11 = _g2._defaultFormat.size | 0;
+			_g2.set_size(_g11 + 1);
+		}
+		this.footer_text.set_x(this.grid_magnitude * this.tile_magnitude / 2 - this.footer_text.get_width() / 2 + this.x_offset);
+		this.footer_text.set_y(flixel_FlxG.height - this.footer_text.textField.get_height() - 10);
 	}
 	,destroy_main_menu: function() {
 		flixel_FlxG.camera.flash(-1,0.3);
@@ -6042,7 +6052,7 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 		}
 		i = 0;
 		i2 = 0;
-		haxe_Log.trace("H:" + Std.string(nested_array),{ fileName : "PlayState.hx", lineNumber : 366, className : "PlayState", methodName : "check_can_move"});
+		haxe_Log.trace("H:" + Std.string(nested_array),{ fileName : "PlayState.hx", lineNumber : 372, className : "PlayState", methodName : "check_can_move"});
 		var _g3 = 0;
 		while(_g3 < nested_array.length) {
 			var row1 = nested_array[_g3];
@@ -6050,7 +6060,7 @@ PlayState.prototype = $extend(flixel_FlxState.prototype,{
 			row1.reverse();
 		}
 		vertical_nested_array = this.rotate_array_counterclockwise(nested_array.slice());
-		haxe_Log.trace("V:" + Std.string(vertical_nested_array),{ fileName : "PlayState.hx", lineNumber : 370, className : "PlayState", methodName : "check_can_move"});
+		haxe_Log.trace("V:" + Std.string(vertical_nested_array),{ fileName : "PlayState.hx", lineNumber : 376, className : "PlayState", methodName : "check_can_move"});
 		var _g4 = 0;
 		while(_g4 < nested_array.length) {
 			var row2 = nested_array[_g4];
@@ -68475,7 +68485,7 @@ var lime_utils_AssetCache = function() {
 	this.audio = new haxe_ds_StringMap();
 	this.font = new haxe_ds_StringMap();
 	this.image = new haxe_ds_StringMap();
-	this.version = 14720;
+	this.version = 821676;
 };
 $hxClasses["lime.utils.AssetCache"] = lime_utils_AssetCache;
 lime_utils_AssetCache.__name__ = ["lime","utils","AssetCache"];
